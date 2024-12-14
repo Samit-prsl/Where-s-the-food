@@ -22,6 +22,7 @@ import {
 import { useToast } from "@/hooks/use-toast"
 
 import SecureReqContext from '../contexts/Requests'
+import { useNavigate } from 'react-router-dom'
 
 const formSchema = z.object({
   items: z.array(z.string()).nonempty({ message: "Items are required." }),
@@ -50,9 +51,17 @@ export default function CreateOrder() {
       time: "",
     },
   })
+  const nav = useNavigate()
   const { toast } = useToast()
   async function onSubmit(values) {
     const storeId = localStorage.getItem('storeId')
+    if(!storeId) {
+      toast({
+        title: "Failure",
+        description: "you need to create a store first",
+      });
+      return nav('/store')
+    }
     setIsSubmitting(true)
     await post(`order/${storeId}`, values)
       .then((data) => {console.log(data);
@@ -61,7 +70,7 @@ export default function CreateOrder() {
           description: "Order Created Successfully!",
         });
         setTimeout(()=>{
-          window.location.replace('/listorders')
+         nav('/listorders')
         },[1000])
       }
       )

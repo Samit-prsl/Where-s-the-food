@@ -1,9 +1,6 @@
 import { createContext } from 'react';
 
 const BASE_URI = import.meta.env.VITE_BACKEND_URL;
-console.log(BASE_URI);
-
-
 
 const SecureReqContext = createContext({
   post: async () => {
