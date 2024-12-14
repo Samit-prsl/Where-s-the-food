@@ -1,12 +1,16 @@
 const Order = require('../models/order');
+const store = require('../models/store');
 
 const createOrder = async (req, res) => {
-  const { items, aggregator, netAmount, grossAmount, tax, discounts, eventLog,time } = req.body;
-  const {storeId} = req.params
+  const { storename,items, aggregator, netAmount, grossAmount, tax, discounts, eventLog,time } = req.body;
   try {
-    const newOrder = new Order({ storeId, items, aggregator, netAmount, grossAmount, tax, discounts, eventLog,date : Date.now(),time });
+    const newOrder = new Order({ storename, items, aggregator, netAmount, grossAmount, tax, discounts, eventLog,date : Date.now(),time });
     await newOrder.save();
-    return res.status(201).json({ order: newOrder });
+    const Store = await store.findOne({name:storename})
+    if(!Store) res.status(409).json({"error":"no store found!"})
+    Store.orders.push(newOrder)
+    await Store.save()
+    return res.status(201).json({ order: Store.orders });
   } catch (err) {
     return res.status(500).json({ error: 'Error creating order', details: err.message });
   }
@@ -15,6 +19,12 @@ const createOrder = async (req, res) => {
 
 const getOrders = async (req, res) => {
   try {
+    if(req.query.store){
+      const storeName = decodeURIComponent(req.query.store)
+      const Store = await Order.find({storename:storeName}).lean()
+      if(!Store) return res.status(409).json({"error":"no store found!"})
+      return res.status(200).json(Store);
+    }
     const orders = await Order.find();
     return res.status(200).json(orders);
   } catch (error) {
@@ -68,6 +78,8 @@ const deleteOrder = async (req, res) => {
     return res.status(500).json({ error: 'Error deleting order', details: error.message });
   }
 };
+
+
 
 module.exports = {
   createOrder,

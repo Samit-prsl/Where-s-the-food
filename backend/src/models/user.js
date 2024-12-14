@@ -12,7 +12,13 @@ const userSchema  = new mongoose.Schema({
     role :{
         type:String,
         required:true
-    }
+    },
+    stores : [
+        {
+            type : mongoose.Schema.Types.ObjectId,
+            ref : "store"
+        }
+    ]
 })
 
 const User = mongoose.model('user',userSchema)

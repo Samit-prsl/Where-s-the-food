@@ -2,6 +2,7 @@ const store = require('../models/store')
 const order = require('../models/order')
 const bcrypt = require('bcryptjs')
 const {getMinutes} = require('../utils/convertToMins')
+const User = require('../models/user')
 const createStoreFunc = async (req,res) => {
     const {name,username,password,aggregator} = req.body
     try {
@@ -11,10 +12,16 @@ const createStoreFunc = async (req,res) => {
         return res.status(409).json('Username already exists!')
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
+
+        const user = await User.findOne({username:req.user.username})
+        if(!user) res.status(400).json('Username doesnt exists!')
+
     
         const newstore = new store({name:name,username:username,password:hashedPassword,aggregator:aggregator})
         await newstore.save()
-        return res.status(201).json({"store":newstore})
+        user.stores.push(newstore)
+        await user.save()
+        return res.status(201).json({"store":user.stores})
     } catch (err) {
         return err
     }
@@ -22,14 +29,16 @@ const createStoreFunc = async (req,res) => {
 
 const getStoreData = async(req,res) =>{
   try {
-    const stores = await store.find().lean();
+    const user = await User.findOne({username:req.user.username})
+    if(!user) res.status(400).json('Username doesnt exists!')
+    const stores = await user.populate('stores')
     const orders = await order.find({ eventLog: 'delivered' }).sort({ date: -1 }).lean();
-
-    const data = stores.map(store => {
+    
+    const data = stores?.stores.map(store => {
         const storeOrders = orders.filter(order => 
-            order.storeId.toString() === store._id.toString()
+            order.storename.toString() === store.name.toString()
         );
-        
+  
         const aggregators = store.aggregator.map(agg => {
             const aggregatorOrders = storeOrders
                 .filter(order => order.aggregator.trim().toLowerCase() === agg.trim().toLowerCase())
@@ -49,9 +58,9 @@ const getStoreData = async(req,res) =>{
         return { storeName: store.name, aggregators };
     });
 
-    res.json(data);
+    return res.json(data); 
 } catch (err) {
-    res.status(500).json({ error: 'Error fetching data', details: err.message });
+    return res.status(500).json({ error: 'Error fetching data', details: err.message });
 }
 }
 
@@ -108,4 +117,14 @@ const updateStore = async (req, res) => {
     }
   };
 
-module.exports =  {createStoreFunc,getStoreData,getSingleStoreData,updateStore,deletestore}
+  const getStoreNames = async(req,res)=>{
+    try {
+      const storeName = await User.findOne({username:req.user.username}).populate('stores')
+      if(!storeName) return res.status(409).json({ message: "Store names not properly" });
+      return res.status(200).json({"stores":storeName.stores})
+    } catch (error) {
+      return error;
+    }
+  }
+
+module.exports =  {createStoreFunc,getStoreData,getSingleStoreData,updateStore,deletestore,getStoreNames}

@@ -54,7 +54,7 @@ const ListStores = () => {
             <CardHeader>
                 <CardTitle className="text-center my-5 text-3xl">Order Management</CardTitle>
                 <CardDescription>
-                    <Table>
+                    {data.length ? <Table>
                         <TableCaption>A list of your recent stores-order time elapses since last order</TableCaption>
                         <TableHeader>
                             <TableRow>
@@ -140,8 +140,13 @@ const ListStores = () => {
                                 );
                             })}
                         </TableBody>
-                    </Table>
-                   <div className=' flex justify-center items-center my-5'> <Button onClick={()=>nav('/')}>Go to dashboard</Button></div>
+                    </Table> : <div className=' flex justify-center items-center'>
+                            No data found or you logged in as a user!
+                        </div>}
+                   <div className=' flex justify-center items-center my-5 space-x-6'> 
+                    <Button onClick={()=>nav('/store')}>Create Store</Button>
+                   <Button onClick={()=>nav('/order')}>Create Orders</Button>
+                   <Button onClick={()=>nav('/')}>Home</Button></div>
                 </CardDescription>
             </CardHeader>
         </Card>

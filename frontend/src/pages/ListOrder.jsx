@@ -15,8 +15,10 @@ export default function OrderList() {
   const [orders, setOrders] = useState([])
   const { get } = useContext(SecureReqContext)
   const nav = useNavigate()
+  const storename = localStorage.getItem('storename')
   async function GET() {
-    await get('api/orders')
+    const query = storename ? `?store=${storename}` : '';
+    await get(`api/orders${query}`)
       .then((data) => setOrders(data))
       .catch((err) => console.log(err))
   }
@@ -70,12 +72,13 @@ export default function OrderList() {
         <Link to={'/order'}><Button className='lg:mx-auto md:mx-auto my-2'>
            Create Order
         </Button></Link>
-        <div className=' mx-auto my-2'> <Button onClick={()=>nav('/')}>Go to dashboard</Button></div>
+        <div className=' mx-auto my-2'> <Button onClick={()=>nav('/')}>Go to home</Button></div>
+        <div className=' mx-auto my-2'> <Button onClick={()=>{localStorage.removeItem('storename');window.location.reload()}}>Show all orders</Button></div>
       </div>
       <Table className='mx-2'>
         <TableHeader>
           <TableRow>
-            <TableCell>Store ID</TableCell>
+            <TableCell>Store name</TableCell>
             <TableCell>Items</TableCell>
             <TableCell>Aggregator</TableCell>
             <TableCell>Net Amount</TableCell>
@@ -90,7 +93,7 @@ export default function OrderList() {
         <TableBody>
           {sortedFilteredOrders.map(order => (
             <TableRow key={order.id}>
-              <TableCell>{order.storeId}</TableCell>
+              <TableCell>{order.storename}</TableCell>
               <TableCell>{order.items.join(',')}</TableCell>
               <TableCell>{order.aggregator}</TableCell>
               <TableCell>{order.netAmount}</TableCell>

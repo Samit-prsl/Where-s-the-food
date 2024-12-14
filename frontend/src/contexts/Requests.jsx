@@ -2,6 +2,7 @@ import { createContext } from 'react';
 
 const BASE_URI = import.meta.env.VITE_BACKEND_URL;
 
+
 const SecureReqContext = createContext({
   post: async () => {
     throw new Error('SecureReqContext not yet initialized');
@@ -24,10 +25,12 @@ export const SecureReqProvider = ({
   children,
 }) => {
   const post = async (url, body) => {
+    const token = localStorage.getItem('token')
     const conf = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(body),
     };
@@ -41,9 +44,12 @@ console.log(conf);
   };
 
   const get = async url => {
+    const token = localStorage.getItem('token')
     const conf = {
       method: 'GET',
       headers: {
+         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
     };
     const response = await fetch(`${BASE_URI}/${url}`, conf);
@@ -54,10 +60,12 @@ console.log(conf);
     throw new Error('Request failed');
   };
   const put = async (url, body) => {
+    const token = localStorage.getItem('token')
     const conf = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(body),
     };
@@ -71,9 +79,11 @@ console.log(conf);
   };
 
   const deleteRequest = async url => {
+    const token = localStorage.getItem('token')
     const conf = {
       method: 'DELETE',
       headers: {
+        'Authorization': `Bearer ${token}`
       },
     };
 
@@ -90,9 +100,11 @@ console.log(conf);
     url,
     body
   ) => {
+    const token = localStorage.getItem('token')
     const conf = {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${token}`
       },
       body,
     };

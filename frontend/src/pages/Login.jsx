@@ -1,11 +1,11 @@
-import * as React from "react"
-import { useContext, useState } from 'react'
-import { useForm,Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import { Select, SelectItem, SelectTrigger, SelectValue, SelectContent, SelectGroup } from "../components/ui/select"
+import * as React from "react";
+import { useContext, useState } from 'react';
+import { useForm, Controller, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Select, SelectItem, SelectTrigger, SelectValue, SelectContent, SelectGroup } from "../components/ui/select";
 import {
   Form,
   FormControl,
@@ -14,16 +14,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "../components/ui/form"
+} from "../components/ui/form";
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import SecureReqContext from '../contexts/Requests'
-import { useToast } from "../hooks/use-toast"
-import { Link, useNavigate } from "react-router-dom"
+} from "@/components/ui/card";
+import SecureReqContext from '../contexts/Requests';
+import { useToast } from "../hooks/use-toast";
+import { Link, useNavigate } from "react-router-dom";
 
 const formSchema = z.object({
   username: z.string().min(3, {
@@ -38,34 +38,63 @@ const formSchema = z.object({
   }).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, {
     message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
   }),
+  storename: z.string().min(3, {
+    message: "Storename must be at least 3 characters.",
+  }).max(20, {
+    message: "Storename must not exceed 20 characters.",
+  }).optional().or(z.literal('')),
   role: z.enum(['admin', 'user'], {
     message: "Role must be either Admin or User.",
   }),
-})
+});
 
 export default function Login() {
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const { post } = useContext(SecureReqContext)
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { post } = useContext(SecureReqContext);
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: "",
       password: "",
-      role: "user", 
+      storename: "",
+      role: "user",
     },
-  })
-  const nav = useNavigate()
-  const { toast } = useToast()
+  });
+
+  const role = useWatch({
+    control: form.control,
+    name: 'role',
+  });
+
+  const nav = useNavigate();
+  const { toast } = useToast();
+
   async function onSubmit(values) {
-    setIsSubmitting(true)
-    await post('login', values).then((data) => {
-      console.log(data);localStorage.setItem('token',data.token);
+    setIsSubmitting(true);
+
+    const body = {
+      username: values.username,
+      password: values.password,
+      role: values.role,
+    };
+
+    if (values.role === 'user') {
+      localStorage.setItem('storename', values.storename);
+    }
+
+    await post('login', body).then((data) => {
+      console.log(data);
+      localStorage.setItem('token', data.token);
       toast({
         title: "Success",
         description: "Logged In Successfully!",
       });
       setTimeout(() => {
-        nav('/')
+        if (values.role === 'user') {
+          nav('/listorders');
+        } else if (values.role === 'admin') {
+          nav('/liststores');
+        }
       }, 1000);
     }).catch((err) => {
       console.log(err);
@@ -73,7 +102,7 @@ export default function Login() {
         title: "Failure",
         description: "Check the credentials!",
       });
-    }).finally(()=>{setIsSubmitting(false)})
+    }).finally(() => { setIsSubmitting(false) });
   }
 
   return (
@@ -82,7 +111,9 @@ export default function Login() {
         <CardTitle className='text-center my-5 text-3xl'>Sign in</CardTitle>
         <CardDescription>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form  onSubmit={form.handleSubmit(onSubmit, (errors) => {
+    console.log('Form validation errors:', errors);
+  })}  className="space-y-8">
               <FormField
                 control={form.control}
                 name="username"
@@ -122,7 +153,7 @@ export default function Login() {
                   <FormItem>
                     <FormLabel>Role</FormLabel>
                     <FormControl>
-                    <Controller
+                      <Controller
                         name="role"
                         control={form.control}
                         render={({ field }) => (
@@ -147,18 +178,37 @@ export default function Login() {
                   </FormItem>
                 )}
               />
+              {role === 'user' && (
+                <FormField
+                  control={form.control}
+                  name="storename"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Store name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter storename" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        This will be your unique identifier. Use only letters, numbers, and underscores.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <div className='flex justify-center items-center'>
-                <Button type="submit" disabled={isSubmitting} className='mx-auto'>
+                <Button type="submit" disabled={isSubmitting} className='mx-auto'
+                >
                   {isSubmitting ? "Submitting..." : "Submit"}
                 </Button>
               </div>
             </form>
           </Form>
-          <div className=" flex justify-center items-center mt-5">
-          <Link to={'/register'} className=" text-lg hover:text-teal-800 text-gray-600 text-center">Click here to register</Link>
+          <div className="flex justify-center items-center mt-5">
+            <Link to={'/register'} className="text-lg hover:text-teal-800 text-gray-600 text-center">Click here to register</Link>
           </div>
         </CardDescription>
       </CardHeader>
     </Card>
-  )
+  );
 }

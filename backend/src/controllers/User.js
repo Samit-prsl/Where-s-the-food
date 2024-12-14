@@ -25,7 +25,7 @@ const registerFunc = async (req,res) => {
 }
 
 const loginFunc = async(req,res) =>{
-    const { username,password,role } = req.body
+    const { username,password,storename,role } = req.body
     try {
         
         const user = await User.findOne({username})

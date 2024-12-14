@@ -17,7 +17,11 @@ const storeSchema  = new mongoose.Schema({
     aggregator : {
         type : [String],
         required : true
-    }
+    },
+    orders : [{
+         type : mongoose.Schema.Types.ObjectId,
+            ref : "order"
+}]
 })
 
 const store = mongoose.model('store',storeSchema)

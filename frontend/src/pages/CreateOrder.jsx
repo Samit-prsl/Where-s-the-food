@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react'
+import { useContext, useState,useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -19,12 +19,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Select, SelectItem, SelectTrigger, SelectValue, SelectContent, SelectGroup } from "../components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 
 import SecureReqContext from '../contexts/Requests'
 import { useNavigate } from 'react-router-dom'
 
 const formSchema = z.object({
+  storename: z.string().min(1, { message: "Store name is required." }),
   items: z.array(z.string()).nonempty({ message: "Items are required." }),
   aggregator: z.string().min(1, { message: "Aggregator is required." }),
   netAmount: z.string().min(1, { message: "Net amount must be a positive number." }),
@@ -37,10 +39,12 @@ const formSchema = z.object({
 
 export default function CreateOrder() {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { post } = useContext(SecureReqContext)
+  const [storeNames, setStoreNames] = useState([])
+  const { post,get } = useContext(SecureReqContext)
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      storename: '',
       items: [],
       aggregator: "",
       netAmount: 0,
@@ -53,17 +57,20 @@ export default function CreateOrder() {
   })
   const nav = useNavigate()
   const { toast } = useToast()
+  useEffect(() => {
+    const fetchStoreNames = async () => {
+      try {
+        await get('api/storenames').then((data)=>{setStoreNames(data);console.log(storeNames.stores)}
+        )
+      } catch (error) {
+        console.error('Error fetching store names:', error);
+      }
+    };
+    fetchStoreNames();
+  }, [post]);
   async function onSubmit(values) {
-    const storeId = localStorage.getItem('storeId')
-    if(!storeId) {
-      toast({
-        title: "Failure",
-        description: "you need to create a store first",
-      });
-      return nav('/store')
-    }
     setIsSubmitting(true)
-    await post(`order/${storeId}`, values)
+    await post('order', values)
       .then((data) => {console.log(data);
         toast({
           title: "Success",
@@ -88,6 +95,33 @@ export default function CreateOrder() {
         <CardDescription>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <FormField
+                control={form.control}
+                name="storename"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Store Name</FormLabel>
+                    <FormControl>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select store" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {storeNames?.stores?.length && storeNames?.stores?.map((storeName, index) => (
+                              <SelectItem key={index} value={storeName.name}>
+                                {storeName.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormDescription>Select a store name for the order.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
                     <FormField
           control={form.control}
           name="items"
